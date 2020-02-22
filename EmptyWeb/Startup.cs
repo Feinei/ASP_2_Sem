@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -34,8 +35,35 @@ namespace EmptyWeb
 			{
 				endpoints.MapGet("/", new HomeController(storage).GetForm);
 				endpoints.MapPost("/Home/AddEntry", new HomeController(storage).AddEntry);
+				endpoints.MapGet("/Home/GetBlogs", new HomeController(storage).GetBlogs);
+				endpoints.MapGet("/Home/ChangeBlog", new HomeController(storage).ChangeBlog);
+				endpoints.MapGet("/Home/DeleteBlog", new HomeController(storage).DeleteBlog);
 			});
-			
+
+			LoadFiles(storage);
+		}
+
+		private void LoadFiles(IStorage storage)
+		{
+			string filePath = "Files";
+			string[] files = Directory.GetFiles(filePath, "*.txt", SearchOption.AllDirectories);
+			storage = new BlogEntriesStorage();
+			foreach (var file in files)
+			{
+				var fileName = file.Remove(0, filePath.Length + 1);
+				fileName = fileName.Remove(fileName.Length - 4, 4);
+				var image = Directory.GetFiles(filePath, $"{fileName}.jpg", SearchOption.AllDirectories).FirstOrDefault();
+
+				string name;
+				string text;
+				using (StreamReader reader = new StreamReader(file))
+				{
+					name = reader.ReadLine();
+					text = reader.ReadLine();
+				}
+
+				storage.Load(new Models.BlogEntry { Name = name, Text = text, FileName = image });
+			}
 		}
 	}
 }
